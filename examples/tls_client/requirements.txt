@@ -1,0 +1,2 @@
+tls-client==2.0.0
+httpx>=0.27

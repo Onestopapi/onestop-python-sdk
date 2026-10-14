@@ -1,0 +1,30 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    environment: pypi
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - run: python -m pip install build
+      - run: python -m build
+      - run: python -m pip install dist/*.whl
+      - run: python -c "import onestop_antibot"
+      - run: python -m compileall -q examples/curl_cffi examples/tls_client examples/wreq
+      - uses: pypa/gh-action-pypi-publish@release/v1
+      - run: |
+          awk -v h="## ${GITHUB_REF_NAME#v} " 'index($0, h) == 1 {f = 1; next} /^## / {f = 0} f' CHANGELOG.md > notes.md
+          test -s notes.md
+          gh release create "$GITHUB_REF_NAME" --title "$GITHUB_REF_NAME" --notes-file notes.md --verify-tag
+        env:
+          GH_TOKEN: ${{ github.token }}

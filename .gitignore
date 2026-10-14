@@ -1,0 +1,35 @@
+# Build output
+__pycache__/
+*.py[cod]
+build/
+dist/
+*.egg-info/
+
+# Virtual environments and caches
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# Coverage and logs
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+*.log
+
+# Environment
+.env
+.env.*
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db
+
+# Local only
+/SCHEMAS.md
+/schemas/
