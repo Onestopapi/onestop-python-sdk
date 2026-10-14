@@ -5,7 +5,7 @@ Python client for the [OneStop Antibot](https://onestopantibot.com) API. The SDK
 ## Install
 
 ```sh
-python -m pip install onestop-antibot
+python -m pip install "onestop-antibot @ git+https://github.com/Onestopapi/onestop-python-sdk.git"
 ```
 
 Requires Python 3.10+. Import it as `onestop_antibot`.
