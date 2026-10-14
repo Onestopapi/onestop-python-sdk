@@ -8,7 +8,7 @@ Python client for the [OneStop Antibot](https://onestopantibot.com) API. The SDK
 python -m pip install onestop-antibot
 ```
 
-Requires Python 3.10+. Import it as `onestop_antibot`.
+Requires Python 3.10+. Import it as `onestop_antibot`. Package: [PyPI](https://pypi.org/project/onestop-antibot/).
 
 ## Quick start
 
