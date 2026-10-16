@@ -138,7 +138,7 @@ def ip_client(proxy: str) -> httpx.Client:
     return httpx.Client(proxy=proxy or None, verify=ssl.create_default_context())
 
 
-# Chrome 150 on Windows. Every header set below is in Chrome's order.
+# Chrome 150 on Windows. Every header set below is in Chrome's order; check them against your browser on your site.
 USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
 _SEC_CH_UA = '"Not;A=Brand";v="8", "Chromium";v="150", "Google Chrome";v="150"'
 _SEC_CH_UA_FULL = '"Not;A=Brand";v="8.0.0.0", "Chromium";v="150.0.7871.51", "Google Chrome";v="150.0.7871.51"'

@@ -4,7 +4,18 @@ Guidance for AI coding assistants using the OneStop Antibot SDK. Working program
 
 ## Rules
 
-1. **Headers and header order matter.** Send exactly the headers a real browser sends for each request type (page, script, XHR/POST), in the same order. Don't let your HTTP client add, drop or reorder headers. The examples show the order for each request (`examples/<client>/httpclient.py`).
+1. **Headers and header order matter.** Send the headers a real browser sends for each request type (page, script, XHR/POST), in the same order. Check them against your browser on your site, and set the order explicitly so your HTTP client doesn't add, drop or reorder headers. The examples' header sets are in `examples/<client>/httpclient.py`; its `do` sets the order like this:
+
+   ```python
+   # curl_cffi: requests.Session(impersonate=..., default_headers=False), headers as ordered pairs
+   session.get(url, headers=[("user-agent", user_agent), ("accept", "*/*")])
+
+   # tls_client
+   session.get(url, headers={"user-agent": user_agent, "accept": "*/*"}, header_order=["user-agent", "accept"])
+
+   # wreq: Emulation(..., headers=False)
+   client.get(url, headers={"user-agent": user_agent, "accept": "*/*"}, orig_headers=["user-agent", "accept"], default_headers=False)
+   ```
 2. **Match the site's region.** Use a proxy in the site's country and an `accept_language` for that country, the way an ordinary visitor would. A `.de` site gets a German proxy and `de-DE,de;q=0.9`.
 3. **`sec-ch-ua` headers must be accurate.** When you present as Chromium, `sec-ch-ua`, `sec-ch-ua-mobile`, `sec-ch-ua-platform` (and the full-version hints when sent) must match the User-Agent's browser, version and platform exactly.
 4. **One identity per session.** Create one `client.session(...)` per browser identity. Use the same `user_agent`, `accept_language`, `site` and `referer` for every call in it. Set `ip` to the proxy's exit IP (`client.get_ip()` with `ip_http_client` going through the same proxy).

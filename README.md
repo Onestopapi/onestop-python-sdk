@@ -27,6 +27,21 @@ res = session.akamai_sensor(abck=abck, bmsz=bmsz, script=script, script_url=scri
 # POST res.payload as sensor_data; send res.context on the next call.
 ```
 
+## Header order
+
+Sites check header names and their order. Send the headers your browser sends, in its order, and set the order explicitly in your TLS client:
+
+```python
+# curl_cffi: requests.Session(impersonate=..., default_headers=False), headers as ordered pairs
+session.get(url, headers=[("user-agent", user_agent), ("accept", "*/*")])
+
+# tls_client
+session.get(url, headers={"user-agent": user_agent, "accept": "*/*"}, header_order=["user-agent", "accept"])
+
+# wreq: Emulation(..., headers=False)
+client.get(url, headers={"user-agent": user_agent, "accept": "*/*"}, orig_headers=["user-agent", "accept"], default_headers=False)
+```
+
 See [examples/](examples) for full flows per product and TLS client.
 
 Documentation: [onestopantibot.com/dashboard/docs](https://onestopantibot.com/dashboard/docs)
