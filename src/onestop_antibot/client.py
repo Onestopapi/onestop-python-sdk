@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import concurrent.futures
 import json
+import threading
 import time
-from typing import Any, Literal
+from typing import Any, Callable, Literal
 
 import httpx
 
@@ -18,6 +20,28 @@ def _http_client(**kwargs: Any) -> httpx.Client:
     client = httpx.Client(trust_env=False, **kwargs)
     client.headers.clear()
     return client
+
+
+def _within(timeout: float, exchange: Callable[[threading.Event], Any]) -> Any:
+    """Run ``exchange`` on its own thread so ``timeout`` bounds the whole call: connect, send and the full read.
+
+    httpx times each phase separately; ``exchange`` sets the event once the response headers are in.
+    """
+    responded = threading.Event()
+    outcome: concurrent.futures.Future[Any] = concurrent.futures.Future()
+
+    def run() -> None:
+        try:
+            outcome.set_result(exchange(responded))
+        except BaseException as e:
+            outcome.set_exception(e)
+
+    threading.Thread(target=run, daemon=True).start()
+    try:
+        return outcome.result(timeout)
+    except concurrent.futures.TimeoutError:
+        step = "read response" if responded.is_set() else "request"
+        raise OneStopError(0, "", f"onestop: {step}: timeout after {timeout:g}s") from None
 
 
 class Client:
@@ -102,19 +126,24 @@ class Client:
     def get_ip(self) -> str:
         """Return the public IP seen by ip.onestopantibot.com through ``ip_http_client``."""
         http = self._ip_http
-        try:
-            request = http.build_request("GET", IP_ENDPOINT, headers=self._auth_headers(), timeout=self._timeout)
-            response = http.send(request, stream=True)
-        except httpx.HTTPError as e:
-            raise OneStopError(0, "", f"onestop: request: {str(e) or type(e).__name__}") from None
-        try:
-            if response.status_code != 200:
-                raise OneStopError(response.status_code, "", "IP lookup failed")
-            body = response.read()
-        except httpx.HTTPError as e:
-            raise OneStopError(0, "", f"onestop: read response: {str(e) or type(e).__name__}") from None
-        finally:
-            response.close()
+
+        def get(responded: threading.Event) -> bytes:
+            try:
+                request = http.build_request("GET", IP_ENDPOINT, headers=self._auth_headers(), timeout=self._timeout)
+                response = http.send(request, stream=True)
+            except httpx.HTTPError as e:
+                raise OneStopError(0, "", f"onestop: request: {str(e) or type(e).__name__}") from None
+            responded.set()
+            try:
+                if response.status_code != 200:
+                    raise OneStopError(response.status_code, "", "IP lookup failed")
+                return response.read()
+            except httpx.HTTPError as e:
+                raise OneStopError(0, "", f"onestop: read response: {str(e) or type(e).__name__}") from None
+            finally:
+                response.close()
+
+        body: bytes = _within(self._timeout, get)
         return body.decode("utf-8", "replace").strip()
 
     def _auth_headers(self) -> dict[str, str | bytes]:
@@ -135,32 +164,38 @@ class Client:
         headers["Accept-Encoding"] = "zstd, gzip"
         headers["x-mode"] = mode
         http = self._http
-        deadline = time.monotonic() + self._timeout
+
+        def post(responded: threading.Event) -> tuple[int, str, str, bytes]:
+            deadline = time.monotonic() + self._timeout
+            try:
+                request = http.build_request("POST", self._endpoint, content=data, headers=headers, timeout=self._timeout)
+                response = http.send(request, stream=True)
+            except (httpx.HTTPError, httpx.InvalidURL) as e:
+                raise OneStopError(0, "", f"onestop: request: {str(e) or type(e).__name__}") from None
+            responded.set()
+            status = response.status_code
+            request_id = response.headers.get("RequestID", "")
+            raw_encoding = response.headers.get("Content-Encoding", "")
+            encoding = raw_encoding.strip().lower()
+            try:
+                if encoding not in ("", "identity", "gzip", "zstd"):
+                    message = json.dumps(raw_encoding, ensure_ascii=False)
+                    raise OneStopError(0, "", f"onestop: unsupported response compression {message}")
+                raw = bytearray()
+                for chunk in response.iter_raw():
+                    raw += chunk
+                    if time.monotonic() > deadline:
+                        raise OneStopError(0, "", f"onestop: read response: timeout after {self._timeout:g}s")
+            except httpx.HTTPError as e:
+                raise OneStopError(0, "", f"onestop: read response: {str(e) or type(e).__name__}") from None
+            finally:
+                response.close()
+            return status, request_id, encoding, bytes(raw)
+
+        status, request_id, encoding, raw = _within(self._timeout, post)
+        decoded = _wire.decompress(encoding, raw)
         try:
-            request = http.build_request("POST", self._endpoint, content=data, headers=headers, timeout=self._timeout)
-            response = http.send(request, stream=True)
-        except (httpx.HTTPError, httpx.InvalidURL) as e:
-            raise OneStopError(0, "", f"onestop: request: {str(e) or type(e).__name__}") from None
-        status = response.status_code
-        request_id = response.headers.get("RequestID", "")
-        raw_encoding = response.headers.get("Content-Encoding", "")
-        encoding = raw_encoding.strip().lower()
-        try:
-            if encoding not in ("", "identity", "gzip", "zstd"):
-                message = json.dumps(raw_encoding, ensure_ascii=False)
-                raise OneStopError(0, "", f"onestop: unsupported response compression {message}")
-            raw = bytearray()
-            for chunk in response.iter_raw():
-                raw += chunk
-                if time.monotonic() > deadline:
-                    raise OneStopError(0, "", f"onestop: read response: timeout after {self._timeout:g}s")
-        except httpx.HTTPError as e:
-            raise OneStopError(0, "", f"onestop: read response: {str(e) or type(e).__name__}") from None
-        finally:
-            response.close()
-        data = _wire.decompress(encoding, bytes(raw))
-        try:
-            success, error, result = _wire.parse(data, key)
+            success, error, result = _wire.parse(decoded, key)
         except ValueError:
             raise OneStopError(status, request_id, "invalid JSON response") from None
         if status != 200 or not success or error:

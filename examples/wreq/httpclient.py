@@ -1,3 +1,4 @@
+# Header sets and order here come from one Chrome recording; copy yours from a browser recording of each request you make.
 """Sends the examples' target requests with wreq (Chrome TLS and HTTP/2 fingerprint, one cookie jar) and holds
 Chrome's headers for each kind of request."""
 
@@ -107,14 +108,14 @@ def ip_client(proxy: str) -> httpx.Client:
     return httpx.Client(proxy=proxy or None, verify=ssl.create_default_context())
 
 
-# Chrome 154 on Windows. Every header set below is in Chrome's order; check them against your browser on your site.
-USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36"
-_SEC_CH_UA = '"Chromium";v="154", "Google Chrome";v="154", "Not A(Brand";v="99"'
-_SEC_CH_UA_FULL = '"Chromium";v="154.0.8037.58", "Google Chrome";v="154.0.8037.58", "Not A(Brand";v="99.0.0.0"'
-_SEC_CH_UA_VERSION = '"154.0.8037.58"'
+# Chrome 155 on Windows.
+USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Safari/537.36"
+_SEC_CH_UA = '"Google Chrome";v="155", "Chromium";v="155", "Not(A:Brand";v="24"'
+_SEC_CH_UA_FULL = '"Google Chrome";v="155.0.8059.39", "Chromium";v="155.0.8059.39", "Not(A:Brand";v="24.0.0.0"'
+_SEC_CH_UA_VERSION = '"155.0.8059.39"'
 _PLATFORM = '"Windows"'
-_ACCEPT_DOCUMENT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
-_ACCEPT_IMAGE = "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
+_ACCEPT_DOCUMENT = "text/html,application/xhtml+xml,application/xml;q=0.9,image/jxl,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7"
+_ACCEPT_IMAGE = "image/jxl,image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8"
 _ACCEPT_ENCODING = "gzip, deflate, br, zstd"
 
 
@@ -281,6 +282,43 @@ def kasada_tl(accept_language: str, kasada: dict[str, str], origin: str, referer
         ("accept-language", accept_language),
         ("priority", "u=1, i"),
     ]).with_(kasada)
+
+
+def imperva_script(accept_language: str, referer: str) -> Headers:
+    """The reese84 script, which the challenge page adds as an async script; Chrome sends no priority header for it."""
+    return Headers([
+        ("sec-ch-ua-platform", _PLATFORM),
+        ("user-agent", USER_AGENT),
+        ("sec-ch-ua", _SEC_CH_UA),
+        ("sec-ch-ua-mobile", "?0"),
+        ("accept", "*/*"),
+        ("sec-fetch-site", "same-origin"),
+        ("sec-fetch-mode", "no-cors"),
+        ("sec-fetch-dest", "script"),
+        ("referer", referer),
+        ("accept-encoding", _ACCEPT_ENCODING),
+        ("accept-language", accept_language),
+    ])
+
+
+def imperva_post(accept_language: str, origin: str, referer: str) -> Headers:
+    """The reese84 POST; the script sets accept and content-type."""
+    return Headers([
+        ("sec-ch-ua-platform", _PLATFORM),
+        ("user-agent", USER_AGENT),
+        ("accept", "application/json; charset=utf-8"),
+        ("sec-ch-ua", _SEC_CH_UA),
+        ("content-type", "text/plain; charset=utf-8"),
+        ("sec-ch-ua-mobile", "?0"),
+        ("origin", origin),
+        ("sec-fetch-site", "same-origin"),
+        ("sec-fetch-mode", "cors"),
+        ("sec-fetch-dest", "empty"),
+        ("referer", referer),
+        ("accept-encoding", _ACCEPT_ENCODING),
+        ("accept-language", accept_language),
+        ("priority", "u=1, i"),
+    ])
 
 
 def challenge_script(accept_language: str, referer: str) -> Headers:

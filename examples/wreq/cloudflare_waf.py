@@ -9,7 +9,7 @@ import httpclient
 import onestop_antibot as onestop
 
 api_key = "YOUR_API_KEY"
-identifier = ""  # your identifier or account name
+identifier = "YOUR_IDENTIFIER"  # your identifier or account name
 page_url = "https://www.example.com/login"
 accept_language = "en-US,en;q=0.9"
 
@@ -22,9 +22,9 @@ challenge_token = re.compile(r'__cf_chl_rt_tk=([^"&]+)')
 def main() -> None:
     hc = httpclient.Client(proxy)
     client, ip = new_client()
-    session = new_session(client, ip, page_url)
-    first = get_challenge_page(hc)
-    run_challenge_loop(hc, session, first)
+    page, first = get_challenge_page(hc)
+    session = new_session(client, ip, page.url)
+    run_challenge_loop(hc, session, page, first)
     site_firewall(hc, page_url)
     print("PASS cf_clearance set")
 
@@ -52,8 +52,8 @@ def new_session(client: onestop.Client, ip: str, site: str) -> onestop.Session:
     )
 
 
-def get_challenge_page(hc: httpclient.Client) -> onestop.CloudflareCall:
-    """Returns the first call: the challenge page and its script."""
+def get_challenge_page(hc: httpclient.Client) -> tuple[httpclient.Response, onestop.CloudflareCall]:
+    """Returns the page and the first call: the challenge page and its script."""
     page = hc.get(page_url, httpclient.navigate(accept_language, ""))
     # The challenge page has the script path (src = '...') and the
     # __cf_chl_rt_tk token.
@@ -62,11 +62,13 @@ def get_challenge_page(hc: httpclient.Client) -> onestop.CloudflareCall:
     if not script_match or not token_match:
         sys.exit(f"FAIL page returned {page.status} without a Cloudflare challenge")
     script_url = page.resolve(script_match[1])
-    script = hc.get(script_url, httpclient.challenge_script(accept_language, page_url + "?__cf_chl_rt_tk=" + token_match[1]))
-    return onestop.CloudflareCall(html=page.body, script=script.body, script_url=script_url)
+    script = hc.get(script_url, httpclient.challenge_script(accept_language, page.url + "?__cf_chl_rt_tk=" + token_match[1]))
+    return page, onestop.CloudflareCall(html=page.body, script=script.body, script_url=script_url)
 
 
-def run_challenge_loop(hc: httpclient.Client, session: onestop.Session, call: onestop.CloudflareCall) -> None:
+def run_challenge_loop(
+    hc: httpclient.Client, session: onestop.Session, page: httpclient.Response, call: onestop.CloudflareCall
+) -> None:
     """Sends each step's requests; each reply goes back on the next call, by its purpose. The form POST sets
     cf_clearance."""
     frame_url = ""
@@ -77,7 +79,7 @@ def run_challenge_loop(hc: httpclient.Client, session: onestop.Session, call: on
             for r in step.requests:
                 if r.purpose == "form":
                     hc.follow_redirects(False)
-                res = hc.do(r.method, r.url, httpclient.cloudflare(r, accept_language, page_url, frame_url), r.body)
+                res = hc.do(r.method, r.url, httpclient.cloudflare(r, accept_language, page.url, frame_url), r.body)
                 if r.purpose == "challenge":
                     if res.status != 200:
                         sys.exit(f"FAIL challenge request returned {res.status}")
@@ -94,7 +96,7 @@ def run_challenge_loop(hc: httpclient.Client, session: onestop.Session, call: on
                 elif r.purpose == "pat":
                     call["pat_status"] = res.status  # a 4xx is normal
                 elif r.purpose == "form":
-                    if not hc.cookie(page_url, "cf_clearance"):
+                    if not hc.cookie(page.url, "cf_clearance"):
                         sys.exit(f"FAIL form POST returned {res.status} without cf_clearance")
                     return
             step = session.cloudflare_waf(**call)

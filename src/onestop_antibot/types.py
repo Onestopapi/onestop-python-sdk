@@ -102,6 +102,15 @@ class KasadaResponse:
 
 
 @dataclass
+class ImpervaResponse:
+    """Imperva result: the reese84 POST body (JSON text); send it as is."""
+
+    payload: str = ""
+    sleep: int = 0
+    request_id: str = ""
+
+
+@dataclass
 class CloudflareHttpRequest:
     """A target request to send; ``purpose`` is challenge, iframe, image, pat or form."""
 

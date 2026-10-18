@@ -13,7 +13,7 @@ import httpclient
 import onestop_antibot as onestop
 
 api_key = "YOUR_API_KEY"
-identifier = ""  # your identifier or account name
+identifier = "YOUR_IDENTIFIER"  # your identifier or account name
 page_url = "https://www.example.com/events/example"
 accept_language = "en-GB,en;q=0.9"
 
@@ -47,11 +47,11 @@ class CheckReply(TypedDict, total=False):
 def main() -> None:
     hc = httpclient.Client(proxy)
     client, ip = new_client()
-    session = new_session(client, ip, page_url)
     page, dd = get_blocked_page(hc)
-    geo_url, geo = get_challenge_page(hc, dd)
+    session = new_session(client, ip, page.url)
+    geo_url, geo = get_challenge_page(hc, page, dd)
     solve_slider(hc, session, page, geo_url, geo)
-    status = reload_page(hc)
+    status = reload_page(hc, page)
     site_firewall(hc, page_url)
     print("PASS captcha check cookie, page re-GET", status)
 
@@ -93,15 +93,17 @@ def get_blocked_page(hc: httpclient.Client) -> tuple[httpclient.Response, Challe
     return page, dd
 
 
-def get_challenge_page(hc: httpclient.Client, dd: Challenge) -> tuple[str, httpclient.Response]:
+def get_challenge_page(
+    hc: httpclient.Client, page: httpclient.Response, dd: Challenge
+) -> tuple[str, httpclient.Response]:
     geo_url = "{}/captcha/?initialCid={}&hash={}&cid={}&t={}&referer={}&s={}".format(
-        geo_origin, quote_plus(dd["cid"]), quote_plus(dd["hsh"]), quote_plus(dd["cookie"]), dd["t"], quote_plus(page_url), dd["s"]
+        geo_origin, quote_plus(dd["cid"]), quote_plus(dd["hsh"]), quote_plus(dd["cookie"]), dd["t"], quote_plus(page.url), dd["s"]
     )
     if dd.get("e"):
         geo_url += "&e=" + quote_plus(dd["e"])
     geo_url += "&dm=cd"
 
-    u = urlsplit(page_url)
+    u = urlsplit(page.url)
     geo = hc.get(geo_url, httpclient.frame(accept_language, "cross-site", f"{u.scheme}://{u.netloc}/").storage_access())
     if geo.status != 200 or not challenge_path.search(geo.body):
         sys.exit(f"FAIL captcha page returned {geo.status} without the slider challenge")
@@ -151,8 +153,8 @@ def solve_slider(
     hc.set_cookie(cookie["domain"], cookie.key, cookie.value)
 
 
-def reload_page(hc: httpclient.Client) -> int:
-    again = hc.get(page_url, httpclient.navigate(accept_language, page_url))
+def reload_page(hc: httpclient.Client, page: httpclient.Response) -> int:
+    again = hc.get(page.url, httpclient.navigate(accept_language, page.url))
     if again.status not in (200, 302):
         sys.exit(f"FAIL page re-GET returned {again.status}")
     return again.status

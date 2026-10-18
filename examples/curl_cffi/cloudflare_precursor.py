@@ -11,7 +11,7 @@ import httpclient
 import onestop_antibot as onestop
 
 api_key = "YOUR_API_KEY"
-identifier = ""  # your identifier or account name
+identifier = "YOUR_IDENTIFIER"  # your identifier or account name
 page_url = "https://www.example.com/"
 accept_language = "en-US,en;q=0.9"
 

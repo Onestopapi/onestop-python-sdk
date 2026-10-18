@@ -10,7 +10,7 @@ import httpclient
 import onestop_antibot as onestop
 
 api_key = "YOUR_API_KEY"
-identifier = ""  # your identifier or account name
+identifier = "YOUR_IDENTIFIER"  # your identifier or account name
 page_url = "https://www.example.com/"
 accept_language = "en-US,en;q=0.9"
 
@@ -136,8 +136,8 @@ def post_sensors(
         post = hc.post(sensor_url.geturl(), httpclient.post(accept_language, "text/plain;charset=UTF-8", origin, page.url).no_cache(), body)
         if post.status not in (200, 201):
             sys.exit(f"FAIL sensor POST returned {post.status}")
-        # Accepted: _abck contains ~0~ or the reply is the 17-byte ack.
-        if "~0~" in hc.cookie(page.url, "_abck") or len(post.content) == 17:
+        # Accepted: _abck contains ~0~ or the reply is exactly {"success": true}.
+        if "~0~" in hc.cookie(page.url, "_abck") or post.content == b'{"success": true}':
             return
         script, context = "", res.context
     sys.exit("FAIL sensor not accepted after 8 POSTs")

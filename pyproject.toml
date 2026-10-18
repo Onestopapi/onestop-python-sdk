@@ -4,14 +4,14 @@ build-backend = "hatchling.build"
 
 [project]
 name = "onestop-antibot"
-version = "0.1.0"
-description = "OneStop Antibot SDK: generate Akamai, SBSD, Pixel, DataDome, Cloudflare and Kasada payloads through the /generate API."
+version = "0.2.0"
+description = "OneStop Antibot SDK: generate Akamai, SBSD, Pixel, DataDome, Cloudflare, Kasada and Imperva payloads through the /generate API."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
 license-files = ["LICENSE"]
 authors = [{ name = "onestopantibot" }]
-keywords = ["antibot", "akamai", "datadome", "cloudflare", "kasada", "sbsd", "onestop"]
+keywords = ["antibot", "akamai", "datadome", "cloudflare", "kasada", "sbsd", "imperva", "onestop"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",

@@ -12,6 +12,7 @@ from .types import (
     CloudflareCall,
     CloudflareResponse,
     DatadomeResponse,
+    ImpervaResponse,
     KasadaPScriptResponse,
     KasadaResponse,
     SbsdResponse,
@@ -221,3 +222,8 @@ class Session:
         """Generate the Kasada /tl body (base64) and headers from the ips.js URL and source."""
         request = _wire.KasadaTlWire(**self._identity(), ipsUrl=script_url, script=script)
         return self._call("Kasada", "kasada", request, _wire.KasadaTlWire)
+
+    def imperva(self, script_url: str, script: str) -> ImpervaResponse:
+        """Generate the reese84 POST body from the challenge script's URL and raw source."""
+        request = _wire.ImpervaWire(**self._identity(), scriptUrl=script_url, script=script)
+        return self._call("Imperva", "imperva", request, _wire.ImpervaWire)

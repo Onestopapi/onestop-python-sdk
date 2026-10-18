@@ -1,5 +1,5 @@
-# Cloudflare Turnstile: load the widget's api.js and its iframe, then send
-# the requests each step returns until the API returns the token.
+# Cloudflare Turnstile: load the page, the widget's api.js and its iframe,
+# then send the requests each step returns until the API returns the token.
 import random
 import struct
 import sys
@@ -9,7 +9,7 @@ import httpclient
 import onestop_antibot as onestop
 
 api_key = "YOUR_API_KEY"
-identifier = ""  # your identifier or account name
+identifier = "YOUR_IDENTIFIER"  # your identifier or account name
 page_url = "https://www.example.com/event"
 site_key = "YOUR_TURNSTILE_SITE_KEY"  # from the page's turnstile.render options
 action = "YOUR_TURNSTILE_ACTION"
@@ -22,9 +22,10 @@ proxy = ""  # your proxy, in the site's country
 def main() -> None:
     hc = httpclient.Client(proxy)
     client, ip = new_client()
-    session = new_session(client, ip, page_url)
-    first = get_challenge_page(hc)
-    token = run_challenge_loop(hc, session, first)
+    page = get_page(hc)
+    session = new_session(client, ip, page.url)
+    first = get_challenge_page(hc, page)
+    token = run_challenge_loop(hc, session, page, first)
     site_firewall(hc, page_url, token)
     print("PASS Turnstile token returned")
 
@@ -52,12 +53,16 @@ def new_session(client: onestop.Client, ip: str, site: str) -> onestop.Session:
     )
 
 
-def get_challenge_page(hc: httpclient.Client) -> onestop.CloudflareCall:
+def get_page(hc: httpclient.Client) -> httpclient.Response:
+    return hc.get(page_url, httpclient.navigate(accept_language, ""))
+
+
+def get_challenge_page(hc: httpclient.Client, page: httpclient.Response) -> onestop.CloudflareCall:
     """Returns the first call: the widget iframe, its final URL and its cf-ray header."""
-    page = urlsplit(page_url)
+    u = urlsplit(page.url)
     api = hc.get(
         "https://challenges.cloudflare.com/turnstile/v0/api.js",
-        httpclient.script(accept_language, "cross-site", f"{page.scheme}://{page.netloc}/").storage_access(),
+        httpclient.script(accept_language, "cross-site", f"{u.scheme}://{u.netloc}/").storage_access(),
     )
     # api.js redirects to /turnstile/v0/<mode>/<version>/api.js.
     segments = urlsplit(api.url).path.split("/")
@@ -82,7 +87,9 @@ def get_challenge_page(hc: httpclient.Client) -> onestop.CloudflareCall:
     )
 
 
-def run_challenge_loop(hc: httpclient.Client, session: onestop.Session, call: onestop.CloudflareCall) -> str:
+def run_challenge_loop(
+    hc: httpclient.Client, session: onestop.Session, page: httpclient.Response, call: onestop.CloudflareCall
+) -> str:
     """Sends each step's requests; each reply goes back on the next call, by its purpose, until the API returns the
     token."""
     frame_url = call["iframe_url"]
@@ -91,7 +98,7 @@ def run_challenge_loop(hc: httpclient.Client, session: onestop.Session, call: on
         while not step.token:
             call = onestop.CloudflareCall(context=step.context, action=action, c_data=c_data)
             for r in step.requests:
-                res = hc.do(r.method, r.url, httpclient.cloudflare(r, accept_language, page_url, frame_url), r.body)
+                res = hc.do(r.method, r.url, httpclient.cloudflare(r, accept_language, page.url, frame_url), r.body)
                 if r.purpose == "challenge":
                     if res.status != 200:
                         sys.exit(f"FAIL challenge request returned {res.status}")

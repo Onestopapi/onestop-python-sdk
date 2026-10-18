@@ -13,6 +13,7 @@ from .types import (
     CloudflareHttpRequest,
     CloudflareResponse,
     DatadomeResponse,
+    ImpervaResponse,
     KasadaPScriptResponse,
     KasadaResponse,
     SbsdResponse,
@@ -144,6 +145,11 @@ class KasadaTlWire(RefererIdentity):
     script: str
 
 
+class ImpervaWire(DatadomeIdentity):
+    scriptUrl: str
+    script: str
+
+
 def _empty(value: Any) -> bool:
     return value is None or (isinstance(value, (str, dict)) and not value)
 
@@ -255,6 +261,10 @@ def _kasada(o: dict[str, Any]) -> KasadaResponse:
     return KasadaResponse(payload=_str(_get(o, "payload")), headers=_map(_get(o, "headers")), sleep=_sleep(o))
 
 
+def _imperva(o: dict[str, Any]) -> ImpervaResponse:
+    return ImpervaResponse(payload=_str(_get(o, "payload")), sleep=_sleep(o))
+
+
 def _cf_request(o: dict[str, Any]) -> CloudflareHttpRequest:
     return CloudflareHttpRequest(
         purpose=_str(_get(o, "purpose")),
@@ -292,6 +302,7 @@ SECTIONS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "datadomeSliderResponse": _datadome,
     "kasadaPscriptResponse": _pscript,
     "kasadaResponse": _kasada,
+    "impervaResponse": _imperva,
     "cloudflareResponse": _cloudflare,
 }
 
