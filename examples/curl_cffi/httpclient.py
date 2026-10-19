@@ -48,7 +48,7 @@ class Client:
         self.session = requests.Session(
             impersonate="chrome150", default_headers=False, proxy=proxy or None, timeout=30, discard_cookies=True
         )
-        self.cookies = Cookies()
+        self.jar = Cookies()
         self.follow = True
 
     def get(self, url: str, headers: Headers) -> Response:
@@ -75,7 +75,7 @@ class Client:
                 )
             except Exception as e:
                 sys.exit(f"FAIL {first_method} {first_url}: {e}")
-            self.cookies.jar.extract_cookies(_SetCookies(res.headers), urllib.request.Request(url))
+            self.jar.jar.extract_cookies(_SetCookies(res.headers), urllib.request.Request(url))
             location = res.headers.get("location")
             if not self.follow or res.status_code not in (301, 302, 303, 307, 308) or not location:
                 break
@@ -87,7 +87,7 @@ class Client:
 
     def _wire(self, method: str, url: str, headers: Headers, data: bytes) -> list[tuple[str, str]]:
         request = urllib.request.Request(url)
-        self.cookies.jar.add_cookie_header(request)
+        self.jar.jar.add_cookie_header(request)
         cookie = request.get_header("Cookie")
         out = [] if method == "GET" else [("content-length", str(len(data)))]
         for name, value in headers:
@@ -107,7 +107,7 @@ class Client:
     def cookie(self, url: str, *names: str) -> str:
         """The first of the named cookies the jar would send to url, or ""."""
         request = urllib.request.Request(url)
-        self.cookies.jar.add_cookie_header(request)
+        self.jar.jar.add_cookie_header(request)
         pairs = (request.get_header("Cookie") or "").split("; ")
         for name in names:
             for pair in pairs:
@@ -116,9 +116,21 @@ class Client:
                     return value
         return ""
 
+    def cookies(self, url: str, prefix: str) -> list[onestop.ImpervaSessionCookie]:
+        """The cookies whose name starts with prefix that the jar would send to url, in browser order: longer path first,
+        then oldest first."""
+        request = urllib.request.Request(url)
+        self.jar.jar.add_cookie_header(request)
+        out: list[onestop.ImpervaSessionCookie] = []
+        for pair in (request.get_header("Cookie") or "").split("; "):
+            key, _, value = pair.partition("=")
+            if key.startswith(prefix):
+                out.append({"name": key, "value": value})
+        return out
+
     def set_cookie(self, domain: str, name: str, value: str) -> None:
         """Stores a cookie for domain and its subdomains."""
-        self.cookies.set(name, value, domain=domain)
+        self.jar.set(name, value, domain=domain)
 
 
 class _SetCookies:

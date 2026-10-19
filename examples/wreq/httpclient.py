@@ -98,6 +98,19 @@ class Client:
                     return c.value
         return ""
 
+    def cookies(self, url: str, prefix: str) -> list[onestop.ImpervaSessionCookie]:
+        """The Path=/ cookies whose name starts with prefix that the jar would send to url, oldest first (get_all lists
+        the jar in creation order)."""
+        labels = urlsplit(url).hostname.split(".")
+        out: list[onestop.ImpervaSessionCookie] = []
+        for name in dict.fromkeys(c.name for c in self.jar.get_all() if c.name.startswith(prefix)):
+            for i in range(len(labels) - 1):
+                c = self.jar.get(name, "https://" + ".".join(labels[i:]) + "/")
+                if c:
+                    out.append({"name": name, "value": c.value})
+                    break
+        return out
+
     def set_cookie(self, domain: str, name: str, value: str) -> None:
         """Stores a cookie for domain and its subdomains."""
         self.jar.add(wreq.Cookie(name, value, domain=domain, path="/"), "https://" + domain.lstrip(".") + "/")

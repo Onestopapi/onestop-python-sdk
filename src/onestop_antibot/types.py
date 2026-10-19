@@ -101,9 +101,16 @@ class KasadaResponse:
     request_id: str = ""
 
 
+class ImpervaSessionCookie(TypedDict):
+    """One ``incap_ses_*`` cookie of the page host, with its exact value, for ``imperva_utmvc``."""
+
+    name: str
+    value: str
+
+
 @dataclass
 class ImpervaResponse:
-    """Imperva result: the reese84 POST body (JSON text); send it as is."""
+    """Imperva result: the reese84 POST body (JSON text), or the ``___utmvc`` cookie value; send it as is."""
 
     payload: str = ""
     sleep: int = 0

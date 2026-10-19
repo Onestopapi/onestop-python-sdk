@@ -495,3 +495,31 @@ Returns `payload` (the whole POST body, a JSON document; send it as is).
 Context: none. Each call stands alone.
 
 Example: `examples/<client>/imperva.py`
+
+#### Imperva utmvc
+
+`session.imperva_utmvc(script_url, script, cookies)` returns `onestop.ImpervaResponse`.
+
+Spot it: a script GET `/_Incapsula_Resource?SWJIYLWA=<hash>` and, right after, an image GET `/_Incapsula_Resource?SWKMTFSR=1&e=<random>`; no POST. `___utmvc` only ever appears in the `Cookie` header of later requests: the script sets it (20 s expiry, path `/`).
+
+1. GET the page. It loads the utmvc script from `/_Incapsula_Resource?SWJIYLWA=<hash>`. Resolve it against the page URL and GET it, with the page URL as referer.
+2. Call with that full script URL, the script's source and the page host's `incap_ses_*` cookies, in browser cookie order. The session's `site` is the page URL, after redirects.
+3. Set `payload` as the `___utmvc` cookie on the page host, path `/`.
+4. GET `/_Incapsula_Resource?SWKMTFSR=1&e=<Math.random()>` on the page's origin as an image, with the page URL as referer. Chrome ignores its answer.
+5. GET the page again. It answers 200.
+
+Reese84 and utmvc can both run on one site.
+
+| Field | When | Value from |
+|---|---|---|
+| `script_url` | Every call | The full script URL you fetched, its `?SWJIYLWA=` query included. |
+| `script` | Every call | The script's source, unchanged. |
+| `cookies` | Every call | Every `incap_ses_*` cookie for the page host as `onestop.ImpervaSessionCookie` (`{"name": ..., "value": ...}`), exact values, in browser cookie order (the order `document.cookie` lists them: longer path first, then oldest first). Required: the API answers an empty list with a 400, so the SDK fails before the call when the list is missing or empty. |
+
+Chromium user agents only.
+
+Returns `payload` (the `___utmvc` cookie value; set it as is).
+
+Context: none. Each call stands alone.
+
+Example: `examples/<client>/imperva_utmvc.py`

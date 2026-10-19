@@ -93,6 +93,16 @@ class Client:
                     return value
         return ""
 
+    def cookies(self, url: str, prefix: str) -> list[onestop.ImpervaSessionCookie]:
+        """The cookies whose name starts with prefix that the jar would send to url, in browser order: longer path first,
+        then oldest first."""
+        out: list[onestop.ImpervaSessionCookie] = []
+        for pair in (get_cookie_header(self.session.cookies, url, {}) or "").split("; "):
+            key, _, value = pair.partition("=")
+            if key.startswith(prefix):
+                out.append({"name": key, "value": value})
+        return out
+
     def set_cookie(self, domain: str, name: str, value: str) -> None:
         """Stores a cookie for domain and its subdomains."""
         self.session.cookies.set(name, value, domain=domain, path="/")

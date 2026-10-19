@@ -14,6 +14,7 @@ from .types import (
     CloudflareResponse,
     DatadomeResponse,
     ImpervaResponse,
+    ImpervaSessionCookie,
     KasadaPScriptResponse,
     KasadaResponse,
     SbsdResponse,
@@ -148,6 +149,12 @@ class KasadaTlWire(RefererIdentity):
 class ImpervaWire(DatadomeIdentity):
     scriptUrl: str
     script: str
+
+
+class ImpervaUtmvcWire(DatadomeIdentity):
+    scriptUrl: str
+    script: str
+    incapSessionCookies: list[ImpervaSessionCookie]
 
 
 def _empty(value: Any) -> bool:

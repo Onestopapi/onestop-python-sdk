@@ -13,6 +13,7 @@ from .types import (
     CloudflareResponse,
     DatadomeResponse,
     ImpervaResponse,
+    ImpervaSessionCookie,
     KasadaPScriptResponse,
     KasadaResponse,
     SbsdResponse,
@@ -227,3 +228,16 @@ class Session:
         """Generate the reese84 POST body from the challenge script's URL and raw source."""
         request = _wire.ImpervaWire(**self._identity(), scriptUrl=script_url, script=script)
         return self._call("Imperva", "imperva", request, _wire.ImpervaWire)
+
+    def imperva_utmvc(self, script_url: str, script: str, cookies: list[ImpervaSessionCookie]) -> ImpervaResponse:
+        """Generate the ``___utmvc`` cookie value from the utmvc script's URL and raw source and the page host's
+        ``incap_ses_*`` cookies, in browser cookie order."""
+        if not cookies:
+            raise OneStopError(0, "", "onestop: cookies is required: the page's incap_ses_* cookies")
+        request = _wire.ImpervaUtmvcWire(
+            **self._identity(),
+            scriptUrl=script_url,
+            script=script,
+            incapSessionCookies=[{"name": c["name"], "value": c["value"]} for c in cookies],
+        )
+        return self._call("Imperva", "imperva", request, _wire.ImpervaUtmvcWire)

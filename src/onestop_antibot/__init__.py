@@ -16,13 +16,14 @@ from .types import (
     DatadomeSliderResponse,
     DatadomeTagsResponse,
     ImpervaResponse,
+    ImpervaSessionCookie,
     KasadaPScriptResponse,
     KasadaResponse,
     PixelResponse,
     SbsdResponse,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
 
 __all__ = [
     "DEFAULT_ENDPOINT",
@@ -37,6 +38,7 @@ __all__ = [
     "DatadomeSliderResponse",
     "DatadomeTagsResponse",
     "ImpervaResponse",
+    "ImpervaSessionCookie",
     "KasadaPScriptResponse",
     "KasadaResponse",
     "OneStopError",
