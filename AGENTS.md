@@ -435,7 +435,7 @@ Example: `examples/<client>/kasada.py` (p.js and /tl, or the 429 block page).
 `session.kasada_tl(script_url, script)` returns `onestop.KasadaResponse`.
 
 1. GET `<base>mfc` with `x-kpsdk-v` and `x-kpsdk-h: 01`. Keep the `x-kpsdk-h` value the `mfc` response returns; the protected requests carry it.
-2. GET `<base>fp?x-kpsdk-v=<v>`. It answers 429 and its body links ips.js: take that `<script src>`, HTML-unescape it (`&amp;` to `&`) and resolve it against the fp URL. No ips.js `src` in the fp body is a failure.
+2. GET `<base>fp?x-kpsdk-v=<v>`. It can answer 200 or 429; use the response body, not the status, to find ips.js: take that `<script src>`, HTML-unescape it (`&amp;` to `&`) and resolve it against the fp URL. No ips.js `src` in the fp body is a failure.
 3. GET that ips.js URL, with the fp URL as referer.
 4. Call with that full URL and the ips.js source.
 5. Base64-decode `payload` and POST it to `<base>tl` as `application/octet-stream`, with every header in `headers` (`x-kpsdk-ct`, `x-kpsdk-dt`, `x-kpsdk-im`, `x-kpsdk-v`; mobile apps also get `x-kpsdk-dv`), the page's origin as `origin` and the fp URL as referer. It answers 200 with `"reload":true`.
