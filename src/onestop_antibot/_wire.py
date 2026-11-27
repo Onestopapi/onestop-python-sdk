@@ -101,6 +101,7 @@ class DatadomeTagsWire(DatadomeIdentity):
 
 
 class DatadomeInterstitialWire(DatadomeIdentity):
+    interstitialBlockUrl: NotRequired[str]
     script: str
     html: str
     pageResponse: str
@@ -108,6 +109,8 @@ class DatadomeInterstitialWire(DatadomeIdentity):
 
 
 class DatadomeSliderWire(DatadomeIdentity):
+    captchaPageUrl: NotRequired[str]
+    scriptUrl: NotRequired[str]
     script: str
     html: str
     pageResponse: str

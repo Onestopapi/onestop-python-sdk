@@ -16,6 +16,8 @@ accept_language = "en-US,en;q=0.9"
 
 proxy = ""  # your proxy, in the site's country
 
+max_sensors = 6
+
 sensor_script = re.compile(r'<script type="text/javascript"[^>]*src="([A-Za-z0-9/_-]+)"></script>')
 sbsd_script = re.compile(r'<script[^>]*src="([^"]*\?v=[^"]*)"')
 
@@ -77,7 +79,10 @@ def find_scripts(page: httpclient.Response) -> tuple[SplitResult, SplitResult]:
     sbsd_match = sbsd_script.search(page.body)
     if page.status != 200 or not sensor_match or not sbsd_match:
         sys.exit(f"FAIL homepage returned {page.status} without the sensor and SBSD scripts")
-    return urlsplit(page.resolve(sensor_match[1])), urlsplit(page.resolve(sbsd_match[1]))
+    sbsd_url = urlsplit(page.resolve(sbsd_match[1]))
+    if parse_qs(sbsd_url.query).get("t"):
+        sys.exit("FAIL SBSD script has t=: a block page, see the sbsd example")
+    return urlsplit(page.resolve(sensor_match[1])), sbsd_url
 
 
 def get_scripts(
@@ -121,7 +126,7 @@ def post_sensors(
     # The first sensor call sends the script, every later call the previous
     # context instead. _abck and bm_sz are cookies set by the site.
     context = ""
-    for _ in range(8):
+    for _ in range(max_sensors):
         try:
             res = session.akamai_sensor(
                 abck=hc.cookie(page.url, "_abck"),
@@ -140,7 +145,7 @@ def post_sensors(
         if "~0~" in hc.cookie(page.url, "_abck") or post.content == b'{"success": true}':
             return
         script, context = "", res.context
-    sys.exit("FAIL sensor not accepted after 8 POSTs")
+    sys.exit(f"FAIL sensor not accepted after {max_sensors} POSTs")
 
 
 def site_firewall(hc: httpclient.Client, page_url: str) -> None:

@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 (2026-11-27)
+
+- DataDome: add explicit interstitial, captcha page and captcha script URLs.
+- Akamai: limit sensor examples to 6 POSTs and distinguish SBSD blocks by `t=`.
+- Docs: clarify DataDome URL inputs and Kasada /tl cookies.
+
 ## 0.2.1 (2026-10-19)
 
 ### Added

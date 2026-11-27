@@ -152,19 +152,22 @@ class Session:
     def datadome_interstitial(
         self,
         *,
+        interstitial_block_url: str = "",
         script: str = "",
         html: str = "",
         page_response: str = "",
         context: str = "",
     ) -> DatadomeResponse:
         request = _wire.DatadomeInterstitialWire(
-            **self._identity(), script=script, html=html, pageResponse=page_response, context=context
+            **self._identity(), interstitialBlockUrl=interstitial_block_url, script=script, html=html, pageResponse=page_response, context=context
         )
         return self._call("DatadomeInterstitial", "datadomeInterstitial", request, _wire.DatadomeInterstitialWire)
 
     def datadome_slider(
         self,
         *,
+        captcha_page_url: str = "",
+        script_url: str = "",
         script: str = "",
         html: str = "",
         page_response: str = "",
@@ -175,6 +178,8 @@ class Session:
         """``background_image`` and ``puzzle_piece`` are base64; ``payload`` is the check request's query string."""
         request = _wire.DatadomeSliderWire(
             **self._identity(),
+            captchaPageUrl=captcha_page_url,
+            scriptUrl=script_url,
             script=script,
             html=html,
             pageResponse=page_response,

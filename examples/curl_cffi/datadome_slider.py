@@ -115,8 +115,10 @@ def solve_slider(
 ) -> None:
     # Without a script tag the bundle is inline and the API reads it from html.
     script = ""
+    script_url = ""
     if match := captcha_script.search(geo.body):
-        script = hc.get(match[1], httpclient.script(accept_language, "same-site", geo_origin + "/").storage_access()).body
+        script_url = geo.resolve(match[1])
+        script = hc.get(script_url, httpclient.script(accept_language, "same-site", geo_origin + "/").storage_access()).body
 
     # The background is captchaChallengePath (.jpg); the puzzle piece is the
     # same path as .frag.png. Both go to the API as base64.
@@ -131,6 +133,8 @@ def solve_slider(
     # script and html are the captcha page's; page_response is the blocked page.
     try:
         res = session.datadome_slider(
+            captcha_page_url=geo_url,
+            script_url=script_url,
             script=script,
             html=geo.body,
             page_response=page.body,

@@ -124,7 +124,7 @@ def solve_interstitial(
     time.sleep(0.4)
     # script and html are the interstitial's; page_response is the blocked page.
     try:
-        res = session.datadome_interstitial(script=script, html=geo.body, page_response=page.body)
+        res = session.datadome_interstitial(interstitial_block_url=geo_url, script=script, html=geo.body, page_response=page.body)
     except onestop.OneStopError as e:
         sys.exit(f"FAIL interstitial: {e}")
 
