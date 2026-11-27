@@ -228,7 +228,7 @@ Context: one DataDome context per session, shared by tags, interstitial and slid
 
 1. GET the page: 403 with the `dd` object, `rt` `i`. `t` equal to `bv` is a hard block: stop.
 2. Build `https://geo.captcha-delivery.com/interstitial/?initialCid=<cid>&hash=<hsh>&cid=<cookie>&referer=<page URL>&s=<s>&e=<e>&b=<b>&dm=cd` from it, in this order. URL-encode each value; leave out `&e=` when `e` is empty.
-3. GET it (as an iframe), then its script: the `src` containing `interstitial.`. Some pages inline the script and have no such `src`; then skip the GET.
+3. GET it as an iframe, then fetch its script (`interstitial.*` or `<16 hex>.js`). HTML-decode and resolve its `src` against the iframe URL. Leave `script` empty only when the bundle is inline.
 4. Call with the script (empty when inlined), that page's HTML, the 403 body and `interstitial_block_url`.
 5. POST `payload` to `https://geo.captcha-delivery.com/interstitial/` as `application/x-www-form-urlencoded; charset=UTF-8`.
 6. The JSON reply has `view: "redirect"` and a `datadome` cookie in `cookie`. Store it on its `Domain` and GET the page again (200 or 302).

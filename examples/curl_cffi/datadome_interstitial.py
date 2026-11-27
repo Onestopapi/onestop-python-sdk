@@ -22,7 +22,7 @@ proxy = ""  # your proxy, in the site's country
 geo_origin = "https://geo.captcha-delivery.com"
 
 dd_object = re.compile(r"var\s+dd\s*=\s*(\{[^}]*\})")
-dd_script = re.compile(r'src="([^"]*interstitial\.[^"]*)"')
+dd_script = re.compile(r"""<script\b[^>]*\bsrc\s*=\s*["']((?:[^"']*/)?(?:interstitial\.[^"']*|[0-9a-f]{16}\.js(?:[?#][^"']*)?))["']""", re.IGNORECASE)
 
 
 class Challenge(TypedDict):
@@ -119,7 +119,7 @@ def solve_interstitial(
     script = ""
     if match := dd_script.search(geo.body):
         time.sleep(0.2)
-        script = hc.get(match[1], httpclient.script(accept_language, "same-site", geo_origin + "/").storage_access()).body
+        script = hc.get(geo.resolve(match[1]), httpclient.script(accept_language, "same-site", geo_origin + "/").storage_access()).body
 
     time.sleep(0.4)
     # script and html are the interstitial's; page_response is the blocked page.
